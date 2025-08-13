@@ -6,39 +6,48 @@ Projekt zawiera kompletną implementację klasycznej maszyny Enigma (3-wirnikowe
 - wtycznicy (plugboard),
 - reflektorów B i C,
 - generatora losowego klucza,
-- prostego CLI oraz testów.
+- prostego CLI oraz testów,
+- logowania historii kroków i opcjonalnej wizualizacji Pygame.
 
 ## Instalacja
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+pip install -e .
+```
+
+Aby użyć Pygame (opcjonalnie):
+
+```bash
+# Linux: wymagane biblioteki SDL (np. libsdl2-dev) – w środowiskach CI często niedostępne
+# Następnie:
+pip install -e .[ui]
 ```
 
 ## Szybki start (CLI)
 
 ```bash
-python enigma_cli.py encrypt --rotors I II III --rings AAA --positions AAA --reflector B --text HELLOWORLD
+python enigma_cli.py encrypt --rotors I II III --rings AAA --positions AAA --reflector B "HELLOWORLD"
 # -> ILBDAAMTAZ
 
-python enigma_cli.py decrypt --rotors I II III --rings AAA --positions AAA --reflector B --text ILBDAAMTAZ
+python enigma_cli.py decrypt --rotors I II III --rings AAA --positions AAA --reflector B "ILBDAAMTAZ"
 # -> HELLOWORLD
 
 python enigma_cli.py genkey --rotors 3 --plugs 6
 ```
 
-Parametry:
-- `--rotors` – nazwy wirników w kolejności od lewej do prawej (np. `I II III`).
-- `--rings` – ustawienia pierścieni, np. `AAA`.
-- `--positions` – pozycje startowe, np. `AAA`.
-- `--reflector` – `B` lub `C`.
-- `--plugs` – pary wtycznicy, np. `AB CD EF`.
-- `--letters-only` – jeśli podane, znaki niebędące literami są odrzucane (domyślnie są zachowywane).
+### Raport kroków
+
+```bash
+python enigma_cli.py encrypt --rotors I II III --rings AAA --positions AAA --reflector B --report "ABCDEF"
+# wypisze szyfrogram i tabelę kroków (pozycje BEFORE/AFTER oraz które wirniki się przesunęły)
+```
 
 ## API (Python)
 
 ```python
-from enigma import EnigmaMachine, EnigmaConfig, generate_random_config
+from enigma import EnigmaMachine, EnigmaConfig
 
 config = EnigmaConfig(
     rotors=["I", "II", "III"],
@@ -51,7 +60,24 @@ machine = EnigmaMachine(config)
 
 cipher = machine.encrypt("HELLOWORLD")
 plain = EnigmaMachine(config).decrypt(cipher)
+
+# Z historią
+cipher2 = machine.encrypt_with_history("ABC")
+print(machine.history_report())
 ```
+
+## Pygame (opcjonalnie)
+
+Uruchom prosty podgląd po instalacji extras:
+
+```bash
+pip install -e .[ui]
+python enigma_pygame.py
+```
+
+- Wyświetla aktualne pozycje wirników (L→R) dla indeksu wpisanego tekstu
+- Szyfruje „na żywo” podczas pisania
+- ESC – wyjście, BACKSPACE – kasowanie znaku, SPACE – spacja
 
 ## Testy
 

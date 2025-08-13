@@ -34,6 +34,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
 	enc.add_argument("--reflector", required=True, help="Reflector name, e.g. B")
 	enc.add_argument("--plugs", nargs="*", help="Plugboard pairs like AB CD EF")
 	enc.add_argument("--letters-only", action="store_true", help="Drop non-letters instead of preserving them")
+	enc.add_argument("--report", action="store_true", help="Print step history report")
 
 	dec = sub.add_parser("decrypt", help="Decrypt text (same as encrypt with same config)")
 	dec.add_argument("text", help="Text to process")
@@ -43,6 +44,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
 	dec.add_argument("--reflector", required=True, help="Reflector name, e.g. B")
 	dec.add_argument("--plugs", nargs="*", help="Plugboard pairs like AB CD EF")
 	dec.add_argument("--letters-only", action="store_true", help="Drop non-letters instead of preserving them")
+	dec.add_argument("--report", action="store_true", help="Print step history report")
 
 	gen = sub.add_parser("genkey", help="Generate a random configuration")
 	gen.add_argument("--rotors", type=int, default=3, help="Number of rotors (>=3)")
@@ -67,13 +69,25 @@ def main(argv: List[str]) -> int:
 		plugboard_pairs=pairs,
 	)
 	machine = EnigmaMachine(config)
-	preserve = not args.letters_only
+	preserve = not getattr(args, "letters_only", False) is True
 	if args.cmd == "encrypt":
-		print(machine.encrypt(args.text, preserve_non_letters=preserve))
-		return 0
+		if getattr(args, "report", False):
+			cipher = machine.encrypt_with_history(args.text, preserve_non_letters=not args.letters_only)
+			print(cipher)
+			print(machine.history_report())
+			return 0
+		else:
+			print(machine.encrypt(args.text, preserve_non_letters=not args.letters_only))
+			return 0
 	elif args.cmd == "decrypt":
-		print(machine.decrypt(args.text, preserve_non_letters=preserve))
-		return 0
+		if getattr(args, "report", False):
+			plain = machine.encrypt_with_history(args.text, preserve_non_letters=not args.letters_only)
+			print(plain)
+			print(machine.history_report())
+			return 0
+		else:
+			print(machine.decrypt(args.text, preserve_non_letters=not args.letters_only))
+			return 0
 	return 1
 
 
